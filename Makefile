@@ -57,6 +57,7 @@ fedora-clean:
 	rm -rf ~/rpmbuild
 
 fedora-install:
+	yum install build/g13gui*.rpm
 
 debian:
 	mkdir -p build
