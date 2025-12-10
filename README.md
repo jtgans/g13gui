@@ -102,6 +102,8 @@ Fedora and its derivatives have a wild and wacky build system for making RPM pac
 from `.spec` files. Thus, the `Makefile` kinda has to manage the build differently than
 other builds, and modifies things outside of the source tree, sadly.
 
+NOTE: I do not run Fedora, and these spec files haven't been validated. YMMV!
+
 First, you need to setup your system with the build tooling:
 
 ```
