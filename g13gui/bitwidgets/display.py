@@ -1,5 +1,4 @@
 import PIL.ImageDraw
-import PIL.PyAccess
 from PIL import Image
 
 from g13gui.observer.subject import Subject

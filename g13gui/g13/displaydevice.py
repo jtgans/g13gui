@@ -13,7 +13,7 @@ class DisplayMetrics(object):
 def ImageToLPBM(image):
     """Simple function to convert a PIL Image into LPBM format."""
 
-    i = PIL.PyAccess.new(image, readonly=True)
+    i = image.getdata()
     bio = BytesIO()
 
     maxBytes = (DisplayMetrics.WIDTH_PIXELS *
@@ -30,7 +30,8 @@ def ImageToLPBM(image):
             maxSubrow = 8
 
         for subrow in range(0, maxSubrow):
-            b |= i[col, row + subrow] << subrow
+            offset = col + (row + subrow) * DisplayMetrics.WIDTH_PIXELS
+            b |= i[offset] << subrow
 
         bio.write(struct.pack('<B', b))
 
