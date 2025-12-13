@@ -5,9 +5,9 @@
 
   <name xml:lang="en">G13 Configurator</name>
   <shortdesc xml:lang="en">Logitech G13 Configurator GUI</shortdesc>
-  <homepage rdf:resource="https://github.com/jtgans/g13" />
-  <download-page rdf:resource="https://github.com/jtgans/g13/releases/" />
-  <bug-database rdf:resource="https://github.com/jtgans/g13/issues" />
+  <homepage rdf:resource="https://github.com/jtgans/g13gui" />
+  <download-page rdf:resource="https://github.com/jtgans/g13gui/releases/" />
+  <bug-database rdf:resource="https://github.com/jtgans/g13gui/issues" />
   <programming-language>Python</programming-language>
   <description>
      G13 Configurator is an easy-to-use configuration and user space driver for
