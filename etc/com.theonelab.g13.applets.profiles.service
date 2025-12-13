@@ -1,0 +1,3 @@
+[D-BUS Service]
+Name=com.theonelab.g13.applets.profiles
+Exec=/usr/bin/g13-profiles

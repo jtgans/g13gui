@@ -1,0 +1,3 @@
+[D-BUS Service]
+Name=com.theonelab.g13.applets.clock
+Exec=/usr/bin/g13-clock
