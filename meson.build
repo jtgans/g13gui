@@ -31,7 +31,7 @@ install_subdir(
 )
 
 install_data(
-  files('etc/com.theonelab.g13.Configurator.desktop',
+  files('etc/com.theonelab.g13.Configurator.desktop'),
   install_dir: join_paths(datadir, 'applications'),
   install_mode: 'rw-r--r--',
 )
