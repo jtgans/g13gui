@@ -201,27 +201,18 @@ class AppletManager(dbus.service.Object, Subject):
                          out_signature='as',
                          sender_keyword='sender')
     def GetProfiles(self, sender):
-        if sender not in [s[0] for s in self._applets.values()]:
-            print('Sender %s is not in the registered list of applets.' % (sender))
-            return []
         return self._prefs.profileNames()
 
     @dbus.service.method(dbus_interface=INTERFACE_NAME,
                          out_signature='s',
                          sender_keyword='sender')
     def GetSelectedProfile(self, sender):
-        if sender not in [s[0] for s in self._applets.values()]:
-            print('Sender %s is not in the registered list of applets.' % (sender))
-            return ''
         return self._prefs.selectedProfileName()
 
     @dbus.service.method(dbus_interface=INTERFACE_NAME,
                          in_signature='s', out_signature='b',
                          sender_keyword='sender')
     def SetSelectedProfile(self, profileName, sender):
-        if self._activeApplet.bus_name != sender:
-            print('Sender %s is not the active applet' % (sender))
-            return False
         if profileName not in self._prefs.profileNames():
             print('Sender %s attempted to set nonexistant profile %s' %
                   (sender, profileName))
@@ -233,17 +224,11 @@ class AppletManager(dbus.service.Object, Subject):
                          in_signature='ss',
                          sender_keyword='sender')
     def SetKey(self, keyName, data, sender):
-        if sender not in [s[0] for s in self._applets.values()]:
-            print('Sender %s is not in the registered list of applets.' % (sender))
-            return
         self._datastore[keyName] = data
 
     @dbus.service.method(dbus_interface=INTERFACE_NAME,
                          in_signature='s', out_signature='s',
                          sender_keyword='sender')
     def GetKey(self, keyName, sender):
-       if sender not in [s[0] for s in self._applets.values()]:
-           print('Sender %s is not in the registered list of applets.' % (sender))
-           return ''
        return self._datastore.get(keyName, '')
 

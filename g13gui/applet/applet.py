@@ -48,7 +48,8 @@ class Applet(dbus.service.Object):
 
     def _discoverManager(self):
         try:
-            self._manager = self._bus.get_name_owner('com.theonelab.g13.AppletManager')
+            self._manager = self._bus.get_object('com.theonelab.g13.AppletManager',
+                                                 '/com/theonelab/g13/AppletManager')
             GLib.timeout_add_seconds(5, self._discoverManager)
         except DBusException:
             GLib.timeout_add_seconds(1, self._discoverManager)
