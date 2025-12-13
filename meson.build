@@ -32,9 +32,14 @@ install_subdir(
 
 install_data(
   files('etc/com.theonelab.g13.Configurator.desktop',
-        'etc/com.theonelab.g13.applet.Clock.desktop',
-        'etc/com.theonelab.g13.applet.Profiles.desktop'),
   install_dir: join_paths(datadir, 'applications'),
+  install_mode: 'rw-r--r--',
+)
+
+install_data(
+  files('etc/com.theonelab.g13.applet.clock.service',
+        'etc/com.theonelab.g13.applet.profiles.service'),
+  install_dir: join_paths(prefix, 'share/dbus-1/services'),
   install_mode: 'rw-r--r--',
 )
 
