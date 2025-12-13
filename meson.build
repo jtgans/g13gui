@@ -37,8 +37,8 @@ install_data(
 )
 
 install_data(
-  files('etc/com.theonelab.g13.applet.clock.service',
-        'etc/com.theonelab.g13.applet.profiles.service'),
+  files('etc/com.theonelab.g13.applets.clock.service',
+        'etc/com.theonelab.g13.applets.profiles.service'),
   install_dir: join_paths(prefix, 'share/dbus-1/services'),
   install_mode: 'rw-r--r--',
 )
