@@ -19,7 +19,7 @@ setup(
     description='A Gtk 3 application to configure the Logitech G13 gameboard',
     long_description=long_description,
     long_description_content_type='text/markdown',
-    url='https://github.com/jtgans/g13',
+    url='https://github.com/jtgans/g13gui',
     author='June Tate-Gans',
     author_email='june@theonelab.com',
     license='MIT',
