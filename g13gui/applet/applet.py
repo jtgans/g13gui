@@ -22,12 +22,23 @@ BUTTONS = [
 
 
 class Applet(dbus.service.Object):
-    BUS_INTERFACE = 'com.theonelab.g13.Applet'
-    BUS_PATH = '/com/theonelab/g13/Applet'
+    BUS_INTERFACE_NAME = 'com.theonelab.g13.Applet'
+    BUS_PATH = '/com/theonelab/g13/applets'
+    BUS_NAME_PREFIX = 'com.theonelab.g13.applets.'
 
-    def __init__(self, name):
-        dbus.service.Object.__init__(self, dbus.SessionBus(),
+    def MakeBusName(name):
+        return Applet.BUS_NAME_PREFIX + name
+
+    def __init__(self, bus_name, name):
+        self._bus = dbus.SessionBus()
+        self._busName = dbus.service.BusName(bus_name,
+                                             bus=self._bus,
+                                             replace_existing=False,
+                                             do_not_queue=True)
+        dbus.service.Object.__init__(self,
+                                     self._bus,
                                      Applet.BUS_PATH)
+        print(f'Applet {name} registered with dbus as {bus_name}')
 
         self._name = name
         self._dd = LoopbackDisplayDevice()
@@ -35,53 +46,23 @@ class Applet(dbus.service.Object):
         self._s = Screen(self._d)
         self._s.hide()
 
-        self._registered = False
-        self._manager = None
-
-    def register(self):
+    def _discoverManager(self):
         try:
-            self._manager = self._bus.get_object(
-                'com.theonelab.g13.AppletManager',
-                '/com/theonelab/g13/AppletManager')
+            self._manager = self._bus.get_name_owner('com.theonelab.g13.AppletManager')
+            GLib.timeout_add_seconds(5, self._discoverManager)
         except DBusException:
-            self._manager = None
-            return True
+            GLib.timeout_add_seconds(1, self._discoverManager)
 
-        self._manager.Register(self._name)
-        self._registered = True
-
-        GLib.idle_add(self.onRegistered)
-        GLib.timeout_add_seconds(1, self._ping)
-
-        return False
-
-    def _ping(self):
-        if self._manager:
-            result = False
-
-            try:
-                result = self._manager.Ping()
-            except DBusException as err:
-                print('Lost connection with AppletManager: %s' % err)
-                self._registered = False
-                GLib.idle_add(self.onUnregistered)
-                GLib.timeout_add_seconds(1, self.register)
-                return False
-
-            if not result:
-                print('Lost registration with AppletManager')
-                self._registered = False
-                GLib.idle_add(self.onUnregistered)
-                GLib.timeout_add_seconds(1, self.register)
-                return False
-
-        return True
+    def _setButtonPressed(self, state, button):
+        if button in BUTTONS:
+            buttonIdx = BUTTONS.index(button)
+            button = self._s.buttonBar.button(buttonIdx)
+            if button:
+                button.pressed = state
 
     def run(self):
         self._bus = dbus.SessionBus()
-
-        GLib.timeout_add_seconds(1, self.register)
-
+        self._discoverManager()
         loop = GLib.MainLoop()
         loop.run()
 
@@ -130,7 +111,12 @@ class Applet(dbus.service.Object):
             frame = ByteArray(frame)
             self._manager.Present(frame, byte_arrays=True)
 
-    @dbus.service.method(BUS_INTERFACE,
+    @dbus.service.method(BUS_INTERFACE_NAME,
+                         out_signature='s')
+    def GetName(self):
+        return self._name
+
+    @dbus.service.method(BUS_INTERFACE_NAME,
                          in_signature='d', out_signature='ay',
                          byte_arrays=True)
     def Present(self, timestamp):
@@ -139,19 +125,12 @@ class Applet(dbus.service.Object):
         self.screen.nextFrame()
         return ByteArray(self.displayDevice.frame)
 
-    @dbus.service.method(BUS_INTERFACE)
+    @dbus.service.method(BUS_INTERFACE_NAME)
     def Unpresent(self):
         self.screen.hide()
         self.onHidden()
 
-    def _setButtonPressed(self, state, button):
-        if button in BUTTONS:
-            buttonIdx = BUTTONS.index(button)
-            button = self._s.buttonBar.button(buttonIdx)
-            if button:
-                button.pressed = state
-
-    @dbus.service.method(BUS_INTERFACE,
+    @dbus.service.method(BUS_INTERFACE_NAME,
                          in_signature='di', out_signature='ay',
                          byte_arrays=True)
     def KeyPressed(self, timestamp, key):
@@ -160,7 +139,7 @@ class Applet(dbus.service.Object):
         self.screen.nextFrame()
         return ByteArray(self.displayDevice.frame)
 
-    @dbus.service.method(BUS_INTERFACE,
+    @dbus.service.method(BUS_INTERFACE_NAME,
                          in_signature='di', out_signature='ay',
                          byte_arrays=True)
     def KeyReleased(self, timestamp, key):

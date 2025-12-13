@@ -3,12 +3,14 @@ import dbus
 import dbus.service
 import dbus.mainloop.glib
 import time
+import threading
 
 from builtins import property
 
 from g13gui.observer.subject import Subject
 from g13gui.observer.subject import ChangeType
 from g13gui.applets.switcher import Switcher
+from g13gui.applet.applet import Applet
 from g13gui.g13.common import G13Keys
 
 gi.require_version('GLib', '2.0')
@@ -29,18 +31,69 @@ class AppletManager(dbus.service.Object, Subject):
 
         self._deviceManager = deviceManager
         self._prefs = prefs
-
-        # [name] -> (sender, proxy)
-        self._applets = {}
         self._datastore = {}
 
         self._switcher = Switcher(self)
         self._lastApplet = self._switcher
         self._activeApplet = self._switcher
 
-        self._applets['Switcher'] = (self._switcher, self._switcher)
+        # map of dbus name -> proxy
+        self._applets = {}
+        self._applets['Switcher'] = self._switcher
+
+        self._threads = []
+
         self.addChange(ChangeType.ADD, 'applet', 'Switcher')
         self.notifyChanged()
+
+    def _startAppletThread(self, bus, name):
+        while True:
+            print(f'Attempting to start applet {name}')
+            try:
+                bus.activate_name_owner(name)
+                proxy = bus.get_object(name, Applet.BUS_PATH)
+                self._applets[name] = proxy
+                print(f'Found {name}')
+                self.addChange(ChangeType.ADD, 'applet', name)
+                self.notifyChanged()
+                return
+            except dbus.DBusException as err:
+                print(f'Failed to activate applet: {err}')
+            time.sleep(1)
+
+    def discoverAndStartApplets(self):
+        bus = dbus.SessionBus()
+        bus.add_signal_receiver(self._onInterfaceAdded,
+                                signal_name='InterfacesAdded',
+                                dbus_interface=Applet.BUS_INTERFACE_NAME,
+                                path='/org/freedesktop/DBus',
+                                sender_keyword='sender')
+        bus.add_signal_receiver(self._onInterfaceRemoved,
+                                signal_name='InterfacesRemoved',
+                                dbus_interface=Applet.BUS_INTERFACE_NAME,
+                                path='/org/freedesktop/DBus',
+                                sender_keyword='sender')
+
+        print('Starting initial activatable services...')
+        for name in bus.list_activatable_names():
+            print(f'Investigating {name}')
+            if name.startswith(Applet.BUS_NAME_PREFIX):
+                print(f'Starting {name}...')
+                thread = threading.Thread(target=self._startAppletThread, args=(bus, str(name)))
+                self._threads.append(thread)
+                thread.start()
+        print('Initial discovery complete.')
+
+    def _onInterfaceAdded(self, sender):
+        print(f'onInterfaceAdded: {sender}')
+        pass
+
+    def _onInterfaceRemoved(self, sender):
+        print(f'onInterfaceRemoved: {sender}')
+        pass
+
+    def stopApplets(self):
+        pass
 
     @property
     def activeApplet(self):
@@ -48,7 +101,7 @@ class AppletManager(dbus.service.Object, Subject):
 
     @activeApplet.setter
     def activeApplet(self, appletName):
-        (name, appletProxy) = self._applets[appletName]
+        appletProxy = self._applets[appletName]
 
         try:
             self._activeApplet.Unpresent()
@@ -80,20 +133,18 @@ class AppletManager(dbus.service.Object, Subject):
         self.onPresent()
 
     @property
-    def appletNames(self):
-        return self._applets.keys()
+    def applets(self):
+        return self._applets
 
     def _updateLCD(self, frame):
         self._deviceManager.setLCDBuffer(frame)
 
     def _removeActiveApplet(self):
-        senders = {proxy: name for (name, (_, proxy)) in self._applets.items()}
-        print('senders is %s' % (repr(senders)))
-
         try:
-            name = senders[self._activeApplet]
-            del self._applets[name]
-            self.addChange(ChangeType.REMOVE, 'applet', name)
+            # name = self._applets[self._activeApplet]
+            # del self._applets[name]
+            # self.addChange(ChangeType.REMOVE, 'applet', name)
+            pass
         except KeyError as err:
             print('Desync occurred: senders does not contain %s!',
                   (self._activeApplet))
@@ -134,22 +185,6 @@ class AppletManager(dbus.service.Object, Subject):
             print('Failed to send keyReleased for applet: %s' % (err))
             self._removeActiveApplet()
 
-    def _registerApplet(self, name, sender):
-        proxy = self._bus.get_object(sender, '/com/theonelab/g13/Applet')
-        self._applets[name] = (sender, proxy)
-        self.addChange(ChangeType.ADD, 'applet', name)
-        self.notifyChanged()
-
-    @dbus.service.method(dbus_interface=INTERFACE_NAME,
-                         in_signature='s', sender_keyword='sender')
-    def Register(self, name, sender):
-        if sender is None:
-            print('Attempt to register None as sender applet!')
-            return False
-
-        print('Registered applet %s as %s' % (name, sender))
-        GLib.idle_add(self._registerApplet, str(name), sender)
-
     def _presentScreen(self, screen, sender):
         self._updateLCD(screen)
 
@@ -161,15 +196,6 @@ class AppletManager(dbus.service.Object, Subject):
             print('Sender %s is not the active applet.' % (sender))
             return
         GLib.idle_add(self._presentScreen, screen, sender)
-
-    @dbus.service.method(dbus_interface=INTERFACE_NAME,
-                         out_signature='b',
-                         sender_keyword='sender')
-    def Ping(self, sender):
-        if sender not in [s[0] for s in self._applets.values()]:
-            print('Sender %s is not in the registered list of applets.' % (sender))
-            return False
-        return True
 
     @dbus.service.method(dbus_interface=INTERFACE_NAME,
                          out_signature='as',

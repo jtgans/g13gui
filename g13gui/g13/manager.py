@@ -253,6 +253,8 @@ class DeviceManager(threading.Thread, Observer):
     def run(self):
         reportBuffer = usb.util.create_buffer(REPORT_SIZE)
 
+        self._appletManager.discoverAndStartApplets()
+
         while self._state != DeviceManager.State.SHUTDOWN:
             print('Discovering devices')
             self._discover()

@@ -36,14 +36,22 @@ class Switcher(Observer):
         return self
 
     def onAppletChange(self, subject, changeType, key, data):
-        self._applets = sorted(self._appletManager.appletNames)
-        self._applets.remove('Switcher')
-        self._lv.model = self._applets
+        self._applets = {}
+        registry = self._appletManager.applets.copy()
+        for dbus_name, proxy in registry.items():
+            if proxy == self:
+                continue
+            name = str(proxy.GetName())
+            self._applets[name] = str(dbus_name)
+
+        self._lv.model = sorted(self._applets.keys())
         self._lv.update()
 
         self._s.nextFrame()
         frame = self._dd.frame
         self._appletManager.Present(frame, self)
+
+        print(repr(self._applets))
 
     def _initWidgets(self):
         self._dd = LoopbackDisplayDevice()
@@ -86,7 +94,7 @@ class Switcher(Observer):
     def _setActiveApplet(self):
         selectedName = self._lv.selection()
         if selectedName:
-            self._appletManager.activeApplet = selectedName
+            self._appletManager.activeApplet = self._applets[selectedName]
 
     def KeyReleased(self, timestamp, key):
         self._setButtonPressed(False, key)

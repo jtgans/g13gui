@@ -15,9 +15,10 @@ from gi.repository import GLib
 
 class ProfilesApplet(Applet):
     NAME = 'Profiles'
+    BUS_NAME = Applet.MakeBusName('profiles')
 
     def __init__(self):
-        Applet.__init__(self, ProfilesApplet.NAME)
+        Applet.__init__(self, ProfilesApplet.BUS_NAME, ProfilesApplet.NAME)
 
         self._profiles = []
         self._selectedProfile = None

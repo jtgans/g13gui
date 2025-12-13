@@ -24,10 +24,11 @@ class ClockMode(enum.Enum):
 
 class ClockApplet(Applet):
     NAME = 'Clock'
+    BUS_NAME = Applet.MakeBusName('clock')
     DATASTORE_KEY = 'com.theonelab.g13gui.applets.clock'
 
     def __init__(self):
-        Applet.__init__(self, ClockApplet.NAME)
+        Applet.__init__(self, ClockApplet.BUS_NAME, ClockApplet.NAME)
 
         self._timeLabel = Label(43, 8, '18:54:00', font=Fonts.LARGE)
         self._timeLabel.showAll()
